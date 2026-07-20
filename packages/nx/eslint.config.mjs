@@ -62,10 +62,11 @@ export default [
     ignores: ['**/*.spec.ts'],
   },
   {
-    // Siblings under migrate/ (including subtrees like agentic/) must go
-    // through migrate/run/'s barrel rather than reaching into its internal
-    // modules directly. run/ itself is excluded via ignores: importing those
-    // modules directly is the normal intra-directory pattern there.
+    // migrate/run/ owns the durable run-state format; siblings under
+    // migrate/ (including subtrees like agentic/) must go through its barrel
+    // rather than reaching into run-state.ts/state-machine.ts/run-id.ts
+    // directly. run/ itself is excluded via ignores: importing those modules
+    // directly is the normal intra-directory pattern there.
     files: ['src/command-line/migrate/**/*.ts'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [

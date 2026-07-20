@@ -15,6 +15,8 @@ const mockMigratePrompt = jest.fn();
 jest.mock('./run', () => ({
   runSingleMigrationWorker: (...args: unknown[]) =>
     mockRunSingleMigrationWorker(...args),
+  runOrchestratorInit: jest.fn(),
+  runOrchestratorReconcile: jest.fn(),
 }));
 
 jest.mock('../../daemon/client/client', () => ({
@@ -162,8 +164,8 @@ describe('migrate() single-migration dispatch', () => {
     it('reports a run-phase parse error through the run funnel, not the generate funnel', async () => {
       const exit = await migrate(
         ROOT,
-        { runMigration: 'a', runMigrations: '' },
-        ['--run-migration=a', '--run-migrations']
+        { runMigration: 'a', stepAction: 'retry' },
+        ['--run-migration=a', '--step-action=retry']
       );
 
       expect(exit).toBe(1);

@@ -18,10 +18,11 @@ const MULTI_MAJOR_MODE_ENV = 'NX_MULTI_MAJOR_MODE';
  *
  * Phase-aware: generate-only options (`include`, `multiMajorMode`) are applied only
  * in the generate phase; `agentic`/`validate` only when running the whole
- * migrations file; `createCommits`/`commitPrefix` when running the file or a
- * single migration (`--run-migration`). This mirrors where each option is
- * consumed and avoids tripping the "cannot be combined with --run-migrations"
- * guards in `parseMigrationsOptions`.
+ * migrations file; `createCommits`/`commitPrefix` when running the file, a
+ * single migration (`--run-migration`), or an orchestrated reconcile (a bare
+ * `--run-id`). This mirrors where each option is consumed and avoids tripping
+ * the "cannot be combined with --run-migrations" guards in
+ * `parseMigrationsOptions`.
  *
  * `include` is carried as `includeFromConfig` rather than `include` so it is never
  * mistaken for an explicit `--include`: `resolveInclude` applies it only when the
@@ -41,9 +42,12 @@ export function applyNxJsonMigrateDefaults(
   // `--run-migrations` with no value is normalized to '' by yargs, so a defined
   // (even empty-string) value means we're in the run-migrations phase.
   const isRunMigrations = merged.runMigrations !== undefined;
-  // The single-migration worker (`--run-migration`) shares the commit options
-  // with the run-migrations loop but nothing else.
-  const isSingleMigration = merged.runMigration !== undefined;
+  // The single-migration worker (`--run-migration`) and an orchestrated
+  // reconcile (a bare `--run-id`) share the commit options with the
+  // run-migrations loop but nothing else. A bare `--run-id` must never take the
+  // generate-options overlay, which would leak `include` etc. from nx.json.
+  const isSingleMigration =
+    merged.runMigration !== undefined || merged.runId !== undefined;
 
   if (isRunMigrations || isSingleMigration) {
     if (

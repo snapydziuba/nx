@@ -2193,6 +2193,19 @@ describe('Migration', () => {
       expect(r).toEqual({
         type: 'runSingleMigration',
         runMigration: '@nx/js:my-migration',
+        runId: undefined,
+      });
+    });
+
+    it('should carry the run id for a recorded single migration', async () => {
+      const r = await parseMigrationsOptions({
+        runMigration: '@nx/js:my-migration',
+        runId: 'run-1',
+      });
+      expect(r).toMatchObject({
+        type: 'runSingleMigration',
+        runMigration: '@nx/js:my-migration',
+        runId: 'run-1',
       });
     });
 
@@ -2200,6 +2213,82 @@ describe('Migration', () => {
       await expect(() =>
         parseMigrationsOptions({ runMigration: '' })
       ).rejects.toThrow(/'--run-migration' requires a migration id/);
+    });
+
+    it('should reject an empty --run-id', async () => {
+      await expect(() =>
+        parseMigrationsOptions({ runMigration: 'a', runId: '' })
+      ).rejects.toThrow(/'--run-id' requires the id of the migrate run/);
+    });
+
+    it('should reject a bare --run-id when the orchestrator gate is off', async () => {
+      const prev = process.env.NX_MIGRATE_ORCHESTRATOR;
+      delete process.env.NX_MIGRATE_ORCHESTRATOR;
+      try {
+        await expect(() =>
+          parseMigrationsOptions({ runId: 'run-1' })
+        ).rejects.toThrow(/'--run-id' requires '--run-migration'/);
+      } finally {
+        if (prev === undefined) delete process.env.NX_MIGRATE_ORCHESTRATOR;
+        else process.env.NX_MIGRATE_ORCHESTRATOR = prev;
+      }
+    });
+
+    describe('orchestrator reconcile (gate on)', () => {
+      let prevGate: string | undefined;
+      beforeEach(() => {
+        prevGate = process.env.NX_MIGRATE_ORCHESTRATOR;
+        process.env.NX_MIGRATE_ORCHESTRATOR = 'true';
+      });
+      afterEach(() => {
+        if (prevGate === undefined) delete process.env.NX_MIGRATE_ORCHESTRATOR;
+        else process.env.NX_MIGRATE_ORCHESTRATOR = prevGate;
+      });
+
+      it('discriminates a reconcile from a bare --run-id', async () => {
+        expect(await parseMigrationsOptions({ runId: 'run-1' })).toEqual({
+          type: 'orchestratorReconcile',
+          runId: 'run-1',
+        });
+      });
+
+      it('carries a --step-action decision on a reconcile', async () => {
+        expect(
+          await parseMigrationsOptions({ runId: 'run-1', stepAction: 'retry' })
+        ).toEqual({
+          type: 'orchestratorReconcile',
+          runId: 'run-1',
+          stepAction: 'retry',
+        });
+      });
+
+      it('rejects an unrecognized --step-action value instead of forwarding it unchecked', async () => {
+        await expect(() =>
+          parseMigrationsOptions({ runId: 'run-1', stepAction: 'bogus' })
+        ).rejects.toThrow(
+          /'--step-action' must be one of retry, skip, retry-clean, adopt/
+        );
+      });
+
+      it('still rejects an empty --run-id', async () => {
+        await expect(() =>
+          parseMigrationsOptions({ runId: '' })
+        ).rejects.toThrow(/'--run-id' requires the id of the migrate run/);
+      });
+    });
+
+    it('should reject --step-action without --run-id', async () => {
+      await expect(() =>
+        parseMigrationsOptions({ stepAction: 'retry' })
+      ).rejects.toThrow(/'--step-action' requires '--run-id'/);
+    });
+
+    it('should reject --step-action combined with --run-migration', async () => {
+      await expect(() =>
+        parseMigrationsOptions({ runMigration: 'a', stepAction: 'retry' })
+      ).rejects.toThrow(
+        /'--step-action' cannot be combined with '--run-migration'/
+      );
     });
 
     it('should reject --run-migration combined with --run-migrations', async () => {
@@ -2221,25 +2310,27 @@ describe('Migration', () => {
     });
 
     describe('run-phase commit-prefix gating', () => {
-      it('classifies --run-migration as run-phase and everything else as not', () => {
+      it('classifies the run flags as run-phase and everything else as not', () => {
         expect(isRunPhaseInvocation({ runMigration: '@nx/js:x' })).toBe(true);
+        expect(isRunPhaseInvocation({ runId: 'run-1' })).toBe(true);
+        expect(isRunPhaseInvocation({ stepAction: 'retry' })).toBe(true);
         expect(isRunPhaseInvocation({ runMigrations: '' })).toBe(false);
         expect(isRunPhaseInvocation({ packageAndVersion: 'nx@latest' })).toBe(
           false
         );
       });
 
-      it('does not throw the commit-prefix assert for a run-phase invocation', () => {
-        // nx.json enables agentic + a custom prefix; a worker invocation gets
-        // the prefix overlaid but not agentic.
+      it('does not throw the commit-prefix assert for a dispensed run-phase invocation', () => {
+        // nx.json enables agentic + a custom prefix; a dispensed worker command
+        // (--run-migration + --run-id) gets the prefix overlaid but not agentic.
         const config = { agentic: true, commitPrefix: 'custom: ' } as const;
         const merged = applyNxJsonMigrateDefaults(
-          { runMigration: '@nx/js:x' },
+          { runMigration: '@nx/js:x', runId: 'run-1' },
           config,
           {}
         );
 
-        // The overlay would otherwise wedge every worker invocation...
+        // The overlay would otherwise wedge every dispensed command...
         expect(() => assertCommitPrefixHasCommits(merged)).toThrow(
           /requires commits to be enabled/i
         );

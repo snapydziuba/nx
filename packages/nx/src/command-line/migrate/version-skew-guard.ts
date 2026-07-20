@@ -1,8 +1,8 @@
 import { lt, valid } from 'semver';
 import { normalizeVersion } from './version-utils';
 
-// First nx version shipping --run-migration. Bump this if the feature slips
-// to a later release.
+// First nx version shipping --run-migration/--run-id. Bump this if the feature
+// slips to a later release.
 export const NEW_MIGRATE_FLAGS_FLOOR = '23.2.0-beta.0';
 
 // The release users see in guidance (floor without its prerelease suffix).
@@ -11,7 +11,14 @@ const NEW_MIGRATE_FLAGS_FLOOR_RELEASE = NEW_MIGRATE_FLAGS_FLOOR.split('-')[0];
 // yargs accepts both `--run-migration` and `--runMigration`, and the raw argv is
 // forwarded verbatim across both migrate hops, so detection must catch every
 // spelling of the new flags.
-export const NEW_MIGRATE_FLAGS = ['--run-migration', '--runMigration'] as const;
+export const NEW_MIGRATE_FLAGS = [
+  '--run-migration',
+  '--runMigration',
+  '--run-id',
+  '--runId',
+  '--step-action',
+  '--stepAction',
+] as const;
 
 /**
  * The first new migrate flag present in `argv`, or undefined when none is. A
