@@ -1,0 +1,117 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { getCollection } from 'astro:content';
+import KnowledgeBaseArticleList from '../../components/kb/KnowledgeBaseArticleList.astro';
+import KnowledgeBaseSearchTrigger from '../../components/kb/KnowledgeBaseSearchTrigger.astro';
+import {
+  getKnowledgeBaseArticles,
+  kbTopics,
+  sortArticlesByLastModified,
+  type KnowledgeBaseTopic,
+} from '../../utils/knowledge-base';
+
+export function getStaticPaths() {
+  return kbTopics.map((topic) => ({
+    params: { topic: topic.id },
+    props: { topic },
+  }));
+}
+
+interface Props {
+  topic: KnowledgeBaseTopic;
+}
+
+const { topic } = Astro.props;
+const articles = sortArticlesByLastModified(
+  getKnowledgeBaseArticles(await getCollection('docs')).filter((article) =>
+    article.topics.includes(topic.label)
+  )
+);
+---
+
+<StarlightPage
+  frontmatter={{
+    title: topic.label,
+    description: topic.description,
+    template: 'splash',
+    tableOfContents: false,
+    pagefind: true,
+  }}
+>
+  <div class="kb-topic-page">
+    <a class="kb-back-link" href="/docs/kb">← Back to Knowledge Base</a>
+    <p class="kb-topic-description">{topic.description}</p>
+    <p class="kb-topic-count">
+      {articles.length}
+      {articles.length === 1 ? 'article' : 'articles'}
+    </p>
+
+    <section class="kb-topic-search" aria-label="Search">
+      <KnowledgeBaseSearchTrigger />
+    </section>
+
+    <section aria-labelledby="topic-articles">
+      <h2 id="topic-articles">All {topic.label} articles</h2>
+      <KnowledgeBaseArticleList
+        articles={articles}
+        label={`${topic.label} Knowledge Base articles`}
+      />
+    </section>
+  </div>
+</StarlightPage>
+
+<style is:global>
+  .kb-topic-page {
+    padding-block: 0.5rem 4rem;
+  }
+
+  .kb-back-link {
+    display: inline-flex;
+    margin-bottom: 1rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .kb-back-link:hover {
+    color: var(--sl-color-text-accent);
+  }
+
+  .kb-back-link:focus-visible {
+    outline: 2px solid var(--sl-color-accent-high);
+    outline-offset: 3px;
+  }
+
+  .kb-topic-description {
+    max-width: 44rem;
+    margin: 0 0 0.5rem;
+    color: var(--sl-color-gray-3);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .kb-topic-count {
+    margin: 0 0 2.5rem;
+    color: var(--sl-color-gray-4);
+    font-size: 0.85rem;
+  }
+
+  .kb-topic-search {
+    margin-bottom: 3rem;
+    padding: 2rem 1rem;
+    border-block: 1px solid var(--sl-color-hairline);
+  }
+
+  .kb-topic-page h2 {
+    margin: 0 0 1rem;
+    color: var(--sl-color-white);
+    font-size: 1.45rem;
+  }
+
+  @media (max-width: 40rem) {
+    .kb-topic-search {
+      margin-inline: -1rem;
+      padding-inline: 1rem;
+    }
+  }
+</style>

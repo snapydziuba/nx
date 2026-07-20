@@ -21,6 +21,7 @@ const customDocsSchema = z
   .object({
     title: z.string(),
     description: z.string(),
+    topics: z.array(z.string()).optional(),
   })
   .and(searchSchema);
 

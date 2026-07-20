@@ -42,14 +42,11 @@ export default defineConfig({
   },
   trailingSlash: 'never',
   redirects: {
-    '/knowledge-base/installation':
-      '/docs/knowledge-base/installation-and-updates',
+    '/knowledge-base/installation': '/docs/kb/installation-and-updates',
     '/guides/nx-cloud/source-control-integration/github':
       '/docs/features/ci-features/github-integration',
-    '/concepts/decisions/overview':
-      '/docs/concepts/decisions/monorepo-vs-polyrepo',
-    '/concepts/decisions/why-monorepos':
-      '/docs/concepts/decisions/what-is-a-monorepo',
+    '/concepts/decisions/overview': '/docs/kb/monorepo-vs-polyrepo',
+    '/concepts/decisions/why-monorepos': '/docs/kb/what-is-a-monorepo',
     '/features/maintain-typescript-monorepos':
       '/docs/technologies/typescript/introduction',
     '/guides/nx-cloud/ci-resource-usage':
@@ -117,6 +114,8 @@ export default defineConfig({
         './src/plugins/github-stars.middleware.ts',
         './src/plugins/raw-content.middleware.ts',
         './src/plugins/canonical.middleware.ts',
+        './src/plugins/knowledge-base-layout.middleware.ts',
+        './src/plugins/knowledge-base-last-updated.middleware.ts',
         './src/plugins/schema.middleware.ts',
       ],
       markdown: {
@@ -152,6 +151,7 @@ export default defineConfig({
         TwoColumnContent: './src/components/layout/TwoColumnContent.astro',
         PageTitle: './src/components/layout/PageTitle.astro',
         TableOfContents: './src/components/layout/TableOfContents.astro',
+        Search: './src/components/layout/Search.astro',
       },
       pagefind: {
         ranking: {

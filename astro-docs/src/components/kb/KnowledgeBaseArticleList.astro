@@ -1,0 +1,360 @@
+---
+import type { KnowledgeBaseArticle } from '../../utils/knowledge-base';
+import { getTopicId } from '../../utils/knowledge-base';
+
+interface Props {
+  articles: KnowledgeBaseArticle[];
+  label: string;
+  filterable?: boolean;
+}
+
+const { articles, label, filterable = false } = Astro.props;
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeZone: 'UTC',
+});
+const topics = Array.from(
+  new Set(articles.flatMap((article) => article.topics))
+).sort((first, second) => first.localeCompare(second));
+---
+
+{
+  filterable && (
+    <fieldset class="kb-topic-filter" data-kb-topic-filter>
+      <legend>Filter by topic</legend>
+      <div class="kb-topic-filter-options">
+        <button
+          type="button"
+          data-topic-id=""
+          aria-controls="kb-article-list"
+          aria-pressed="true"
+        >
+          All topics
+        </button>
+        {topics.map((topic) => (
+          <button
+            type="button"
+            data-topic-id={getTopicId(topic)}
+            aria-controls="kb-article-list"
+            aria-pressed="false"
+          >
+            {topic}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+<div class="kb-list-wrapper" data-pagefind-ignore>
+  <table class="kb-list" id={filterable ? 'kb-article-list' : undefined}>
+    <caption class="sr-only">{label}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Last modified</th>
+        <th scope="col">Topics</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        articles.map((article) => (
+          <tr data-topic-ids={article.topics.map(getTopicId).join(' ')}>
+            <td class="kb-list-title">
+              <a href={article.href}>{article.title}</a>
+            </td>
+            <td data-label="Last modified">
+              <time datetime={article.lastModified.toISOString()}>
+                {dateFormatter.format(article.lastModified)}
+              </time>
+            </td>
+            <td data-label="Topics">
+              <ul
+                class="kb-list-topics"
+                aria-label={`Topics for ${article.title}`}
+              >
+                {article.topics.map((topic) => (
+                  <li>
+                    <a href={`/docs/kb/${getTopicId(topic)}`}>{topic}</a>
+                  </li>
+                ))}
+              </ul>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .kb-topic-filter {
+    margin: 0 0 1.25rem;
+    padding: 0;
+    border: 0;
+  }
+
+  .kb-topic-filter legend {
+    margin-bottom: 0.65rem;
+    color: var(--sl-color-gray-3);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .kb-topic-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .kb-topic-filter button {
+    margin: 0;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 999px;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .kb-topic-filter button:hover {
+    border-color: var(--sl-color-gray-4);
+    color: var(--sl-color-white);
+  }
+
+  .kb-topic-filter button[aria-pressed='true'] {
+    border-color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-white);
+  }
+
+  .kb-topic-filter button:focus-visible {
+    outline: 2px solid var(--sl-color-accent-high);
+    outline-offset: 2px;
+  }
+
+  .kb-list-wrapper {
+    overflow: hidden;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+  }
+
+  .kb-list-wrapper > .kb-list {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    background: color-mix(in srgb, var(--sl-color-gray-6) 55%, transparent);
+    color: var(--sl-color-gray-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr {
+    transition: background 0.15s ease;
+  }
+
+  tbody tr:hover {
+    background: color-mix(in srgb, var(--sl-color-gray-6) 35%, transparent);
+  }
+
+  .kb-list tr[hidden] {
+    display: none;
+  }
+
+  .kb-list-title {
+    width: 52%;
+  }
+
+  .kb-list-title a {
+    color: var(--sl-color-white);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .kb-list-title a:hover {
+    color: var(--sl-color-text-accent);
+  }
+
+  time {
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+  }
+
+  .kb-list-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .kb-list-topics a {
+    display: inline-flex;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-gray-3);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .kb-list-topics a:hover {
+    color: var(--sl-color-white);
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--sl-color-accent-high);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 44rem) {
+    .kb-list-wrapper {
+      border: 0;
+      border-radius: 0;
+    }
+
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    tbody,
+    tr,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--sl-color-hairline);
+    }
+
+    tr:first-child {
+      border-top: 1px solid var(--sl-color-hairline);
+    }
+
+    td {
+      display: flex;
+      gap: 0.75rem;
+      align-items: baseline;
+      padding: 0.25rem 0;
+      border: 0;
+    }
+
+    td[data-label]::before {
+      flex: 0 0 6.5rem;
+      color: var(--sl-color-gray-4);
+      content: attr(data-label);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .kb-list-title {
+      display: block;
+      width: 100%;
+      margin-bottom: 0.35rem;
+      font-size: 1rem;
+    }
+
+    tbody tr:hover {
+      background: transparent;
+    }
+  }
+</style>
+
+<script>
+  function initializeTopicFilter(filter: HTMLElement) {
+    if (filter.dataset.initialized === 'true') return;
+    filter.dataset.initialized = 'true';
+
+    const table = document.getElementById('kb-article-list');
+    const count = document.querySelector<HTMLElement>(
+      '[data-kb-article-count]'
+    );
+    const buttons = Array.from(
+      filter.querySelectorAll<HTMLButtonElement>('[data-topic-id]')
+    );
+    const rows = Array.from(
+      table?.querySelectorAll<HTMLTableRowElement>('tbody tr') ?? []
+    );
+    const validTopicIds = new Set(
+      buttons.map((button) => button.dataset.topicId).filter(Boolean)
+    );
+
+    function applyTopic(topicId: string, updateUrl = false) {
+      const activeTopicId = validTopicIds.has(topicId) ? topicId : '';
+      let visibleCount = 0;
+
+      for (const row of rows) {
+        const rowTopics = row.dataset.topicIds?.split(' ') ?? [];
+        row.hidden =
+          Boolean(activeTopicId) && !rowTopics.includes(activeTopicId);
+        if (!row.hidden) visibleCount += 1;
+      }
+
+      for (const button of buttons) {
+        button.setAttribute(
+          'aria-pressed',
+          String((button.dataset.topicId ?? '') === activeTopicId)
+        );
+      }
+
+      if (count) {
+        count.textContent = `${visibleCount} ${visibleCount === 1 ? 'article' : 'articles'}`;
+      }
+
+      if (updateUrl) {
+        const url = new URL(window.location.href);
+        if (activeTopicId) url.searchParams.set('topic', activeTopicId);
+        else url.searchParams.delete('topic');
+        window.history.replaceState({}, '', url);
+      }
+    }
+
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        applyTopic(button.dataset.topicId ?? '', true);
+      });
+    }
+
+    applyTopic(new URL(window.location.href).searchParams.get('topic') ?? '');
+  }
+
+  document
+    .querySelectorAll<HTMLElement>('[data-kb-topic-filter]')
+    .forEach(initializeTopicFilter);
+</script>

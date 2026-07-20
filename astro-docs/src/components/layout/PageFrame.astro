@@ -11,6 +11,9 @@ import { isConfBannerActive } from './conf-banner';
 const { hasSidebar } = Astro.locals.starlightRoute;
 const githubStarsCount = Astro.locals.githubStarsCount ?? 0;
 const showConfBanner = isConfBannerActive();
+const pagefindSection = Astro.url.pathname.startsWith('/docs/kb')
+  ? 'kb'
+  : 'docs';
 
 // Get banner from collection
 const bannerCollection = await getCollection('banner');
@@ -65,7 +68,10 @@ const bannerId = bannerConfig ? `${bannerConfig.title}-${bannerConfig.activeUnti
       </nav>
     )
   }
-  <div class="main-frame"><slot /></div>
+  <div class="main-frame">
+    <span data-pagefind-filter={`section:${pagefindSection}`} hidden></span>
+    <slot />
+  </div>
   <Footer disableThemeSwitcher={true} useDomainPrefix={true} className="dark:bg-slate-900" />
   {showBanner && bannerConfig && (
     <WebinarNotifier

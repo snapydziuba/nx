@@ -1,0 +1,13 @@
+{
+  "featuredArticleSlugs": [
+    "angular-nx-version-matrix",
+    "what-is-a-monorepo",
+    "monorepo-vs-polyrepo",
+    "setup-ci",
+    "folder-structure",
+    "typescript-7"
+  ],
+  "contextualSearchBoost": 1.5,
+  "historyBaseCommit": "6df4b1e6bcd3f65e0de497d9a7345460126405c3",
+  "bulkCommitArticleThreshold": 20
+}
